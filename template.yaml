@@ -11,8 +11,8 @@ Resources:
   samappHelloWorldFunctionTZLlczmBBK1X:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
-      Description: ''
+      CodeUri: hello_world/
+      Description: HelloWorld Lambda function
       MemorySize: 128
       Timeout: 3
       Handler: app.lambda_handler
@@ -33,16 +33,41 @@ Resources:
                 - logs:CreateLogStream
                 - logs:PutLogEvents
               Resource: '*'
+        - DynamoDBCrudPolicy:
+            TableName: !Ref LambdaIaCTable
       RecursiveLoop: Terminate
       SnapStart:
         ApplyOn: None
-      Tags:
-        lambda:createdBy: SAM
       Events:
         Api1:
           Type: Api
           Properties:
             Path: /hello
             Method: GET
+        LambdaIaCQueue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt LambdaIaCQueue.Arn
+            BatchSize: 1
       RuntimeManagementConfig:
         UpdateRuntimeOn: Auto
+      Environment:
+        Variables:
+          LAMBDAIACTABLE_TABLE_NAME: !Ref LambdaIaCTable
+          LAMBDAIACTABLE_TABLE_ARN: !GetAtt LambdaIaCTable.Arn
+  LambdaIaCQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 345600
+  LambdaIaCTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
