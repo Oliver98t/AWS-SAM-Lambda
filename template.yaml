@@ -8,7 +8,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: An AWS Serverless Application Model template describing your function.
 Resources:
-  samappHelloWorldFunctionTZLlczmBBK1X:
+  Function1:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
@@ -21,12 +21,49 @@ Resources:
         - x86_64
       EphemeralStorage:
         Size: 512
+      Environment:
+        Variables:
+          LAMBDAIACTABLE_TABLE_ARN: arn:aws:dynamodb:eu-west-2:348345791015:table/sam-app-LambdaIaCTable-1CRCC2OZZYQEA
+          LAMBDAIACTABLE_TABLE_NAME: sam-app-LambdaIaCTable-1CRCC2OZZYQEA
+          TABLE_TABLE_NAME: !Ref Table
+          TABLE_TABLE_ARN: !GetAtt Table.Arn
       EventInvokeConfig:
         MaximumEventAgeInSeconds: 21600
         MaximumRetryAttempts: 2
+        DestinationConfig: {}
       PackageType: Zip
       Policies:
         - Statement:
+            - Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: '*'
+              Effect: Allow
+            - Action:
+                - dynamodb:GetItem
+                - dynamodb:DeleteItem
+                - dynamodb:PutItem
+                - dynamodb:Scan
+                - dynamodb:Query
+                - dynamodb:UpdateItem
+                - dynamodb:BatchWriteItem
+                - dynamodb:BatchGetItem
+                - dynamodb:DescribeTable
+                - dynamodb:ConditionCheckItem
+              Resource:
+                - arn:aws:dynamodb:eu-west-2:348345791015:table/sam-app-LambdaIaCTable-1CRCC2OZZYQEA
+                - arn:aws:dynamodb:eu-west-2:348345791015:table/sam-app-LambdaIaCTable-1CRCC2OZZYQEA/index/*
+              Effect: Allow
+            - Effect: Allow
+              Action:
+                - sqs:ReceiveMessage
+                - sqs:DeleteMessage
+                - sqs:GetQueueAttributes
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: '*'
             - Effect: Allow
               Action:
                 - logs:CreateLogGroup
@@ -34,32 +71,52 @@ Resources:
                 - logs:PutLogEvents
               Resource: '*'
         - DynamoDBCrudPolicy:
-            TableName: !Ref LambdaIaCTable
+            TableName: !Ref Table
       RecursiveLoop: Terminate
       SnapStart:
         ApplyOn: None
       Events:
-        Api1:
+        SQS1:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SQSQueue1.Arn
+            BatchSize: 1
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: Auto
+  SQSQueue1:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: SQSQueue1
+      SqsManagedSseEnabled: true
+  Function2:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: Function
+      CodeUri: test_func
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Events:
+        ServerlessRestApiGEThello:
           Type: Api
           Properties:
             Path: /hello
             Method: GET
-        LambdaIaCQueue:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt LambdaIaCQueue.Arn
-            BatchSize: 1
-      RuntimeManagementConfig:
-        UpdateRuntimeOn: Auto
       Environment:
         Variables:
-          LAMBDAIACTABLE_TABLE_NAME: !Ref LambdaIaCTable
-          LAMBDAIACTABLE_TABLE_ARN: !GetAtt LambdaIaCTable.Arn
-  LambdaIaCQueue:
-    Type: AWS::SQS::Queue
+          SQSQUEUE1_QUEUE_NAME: !GetAtt SQSQueue1.QueueName
+          SQSQUEUE1_QUEUE_ARN: !GetAtt SQSQueue1.Arn
+          SQSQUEUE1_QUEUE_URL: !Ref SQSQueue1
+  FunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+
     Properties:
-      MessageRetentionPeriod: 345600
-  LambdaIaCTable:
+      LogGroupName: !Sub /aws/lambda/${Function2}
+  Table:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
