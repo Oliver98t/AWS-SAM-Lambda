@@ -1,17 +1,66 @@
-# This AWS SAM template has been generated from your function's configuration. If
-# your function has one or more triggers, note that the AWS resources associated
-# with these triggers aren't fully specified in this template and include
-# placeholder values. Open this template in AWS Infrastructure Composer or your
-# favorite IDE and modify it to specify a serverless application with other AWS
-# resources.
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: An AWS Serverless Application Model template describing your function.
 Resources:
+  SQSQueue1:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: SQSQueue1
+      SqsManagedSseEnabled: true
+    Metadata:
+      SamResourceId: SQSQueue1
+  Table:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+    Metadata:
+      SamResourceId: Table
   Function1:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: hello_world/
+      Environment:
+        Variables:
+          SQSQUEUE1_QUEUE_NAME: !GetAtt SQSQueue1.QueueName
+          SQSQUEUE1_QUEUE_ARN: !GetAtt SQSQueue1.Arn
+          SQSQUEUE1_QUEUE_URL: !Ref SQSQueue1
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: Function1
+      CodeUri: Function1/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Events:
+        ServerlessRestApiGEThello:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: GET
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt SQSQueue1.QueueName
+    Metadata:
+      SamResourceId: Function1
+  Function1LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Function1}
+    Metadata:
+      SamResourceId: Function1LogGroup
+  Function2:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: Function2/
       Description: HelloWorld Lambda function
       MemorySize: 128
       Timeout: 3
@@ -83,48 +132,11 @@ Resources:
             BatchSize: 1
       RuntimeManagementConfig:
         UpdateRuntimeOn: Auto
-  SQSQueue1:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: SQSQueue1
-      SqsManagedSseEnabled: true
-  Function2:
-    Type: AWS::Serverless::Function
-    Properties:
-      Description: !Sub
-        - Stack ${AWS::StackName} Function ${ResourceName}
-        - ResourceName: Function
-      CodeUri: test_func
-      Handler: app.lambda_handler
-      Runtime: python3.14
-      MemorySize: 3008
-      Timeout: 30
-      Tracing: Active
-      Events:
-        ServerlessRestApiGEThello:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: GET
-      Environment:
-        Variables:
-          SQSQUEUE1_QUEUE_NAME: !GetAtt SQSQueue1.QueueName
-          SQSQUEUE1_QUEUE_ARN: !GetAtt SQSQueue1.Arn
-          SQSQUEUE1_QUEUE_URL: !Ref SQSQueue1
-  FunctionLogGroup:
+    Metadata:
+      SamResourceId: Function2
+  Function2LogGroup:
     Type: AWS::Logs::LogGroup
-
     Properties:
       LogGroupName: !Sub /aws/lambda/${Function2}
-  Table:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-      BillingMode: PAY_PER_REQUEST
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-      StreamSpecification:
-        StreamViewType: NEW_AND_OLD_IMAGES
+    Metadata:
+      SamResourceId: Function2LogGroup
