@@ -236,7 +236,7 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
-samconfig.toml
+
 # Build folder
 
 */build/*
