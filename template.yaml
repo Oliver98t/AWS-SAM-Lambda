@@ -69,8 +69,6 @@ Resources:
         Size: 512
       Environment:
         Variables:
-          LAMBDAIACTABLE_TABLE_ARN: arn:aws:dynamodb:eu-west-2:348345791015:table/sam-app-LambdaIaCTable-1CRCC2OZZYQEA
-          LAMBDAIACTABLE_TABLE_NAME: sam-app-LambdaIaCTable-1CRCC2OZZYQEA
           TABLE_TABLE_NAME: !Ref Table
           TABLE_TABLE_ARN: !GetAtt Table.Arn
       EventInvokeConfig:

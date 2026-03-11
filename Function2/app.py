@@ -23,6 +23,6 @@ def lambda_handler(event, context):
         Item={
             'id': {'S': str(uuid.uuid4())},
             'timestamp': {'S': datetime.datetime.now().isoformat()},
-            'Value': {'N': value}
+            'Value': {'N': str(value)}
         }
     )

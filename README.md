@@ -1,13 +1,103 @@
 # sam-app
 
-This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
+An event-driven serverless pipeline built with AWS SAM and container-based Lambda functions.
 
-- hello_world - Code for the application's Lambda function.
-- events - Invocation events that you can use to invoke the function.
-- tests - Unit tests for the application code. 
-- template.yaml - A template that defines the application's AWS resources.
+## Architecture
 
-The application uses several AWS resources, including Lambda functions and an API Gateway API. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
+```
+HTTP GET /hello
+    │
+    ▼
+Function1 (Lambda)
+    │  publishes message {"value": 400}
+    ▼
+SQS Queue
+    │  triggers
+    ▼
+Function2 (Lambda)
+    │  writes item
+    ▼
+DynamoDB Table
+```
+
+| Resource | Type | Purpose |
+|---|---|---|
+| `Function1` | Lambda (container) | Receives HTTP request, sends message to SQS |
+| `Function2` | Lambda (container) | Consumes SQS message, writes to DynamoDB |
+| `SQSQueue1` | SQS Queue | Decouples Function1 from Function2 |
+| `Table` | DynamoDB | Stores processed records |
+
+## Prerequisites
+
+- [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
+- [Docker](https://hub.docker.com/search/?type=edition&offering=community)
+- AWS credentials configured (`~/.aws/credentials`)
+
+## Deploy
+
+First-time setup (saves config to `samconfig.toml`):
+
+```bash
+sam build
+sam deploy --guided
+```
+
+Subsequent deployments:
+
+```bash
+sam build && sam deploy
+```
+
+## Local Development
+
+### Run Function1 as a live HTTP endpoint
+
+```bash
+sam local start-api
+curl http://localhost:3000/hello
+```
+
+### Invoke functions directly with test events
+
+```bash
+# Function1 (HTTP trigger)
+sam local invoke Function1 --event events/Function1Event.json
+
+# Function2 (SQS trigger)
+sam local invoke Function2 --event events/Function2Event.json --env-vars events/env.json
+```
+
+> `events/env.json` is required for local invocation of Function2 because CloudFormation intrinsic functions (`!Ref`, `!GetAtt`) don't resolve locally. Generate it with:
+> ```bash
+> TABLE_NAME=$(aws cloudformation describe-stack-resource --stack-name sam-container --logical-resource-id Table --query "StackResourceDetail.PhysicalResourceId" --output text --region eu-west-2)
+> QUEUE_URL=$(aws cloudformation describe-stack-resource --stack-name sam-container --logical-resource-id SQSQueue1 --query "StackResourceDetail.PhysicalResourceId" --output text --region eu-west-2)
+> echo "{\"Function1\":{\"SQSQUEUE1_QUEUE_URL\":\"$QUEUE_URL\"},\"Function2\":{\"TABLE_TABLE_NAME\":\"$TABLE_NAME\"}}" > events/env.json
+> ```
+
+### Watch mode (syncs changes to AWS automatically)
+
+```bash
+sam sync --stack-name sam-container
+```
+
+## Tests
+
+```bash
+pip install -r tests/requirements.txt
+pytest tests/unit -v
+```
+
+## Logs
+
+```bash
+sam logs --stack-name sam-container --tail
+```
+
+## Cleanup
+
+```bash
+aws cloudformation delete-stack --stack-name sam-container --region eu-west-2
+```
 
 If you prefer to use an integrated development environment (IDE) to build and test your application, you can use the AWS Toolkit.  
 The AWS Toolkit is an open source plug-in for popular IDEs that uses the SAM CLI to build and deploy serverless applications on AWS. The AWS Toolkit also adds a simplified step-through debugging experience for Lambda function code. See the following links to get started.
