@@ -1,0 +1,15 @@
+{
+  "Records": [
+    {
+      "body": "{\"value\": 400}",
+      "messageId": "test-message-id",
+      "receiptHandle": "test-receipt-handle",
+      "attributes": {},
+      "messageAttributes": {},
+      "md5OfBody": "",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:eu-west-2:348345791015:SQSQueue1",
+      "awsRegion": "eu-west-2"
+    }
+  ]
+}

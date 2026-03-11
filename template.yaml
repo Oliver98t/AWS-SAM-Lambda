@@ -34,9 +34,7 @@ Resources:
       Description: !Sub
         - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: Function1
-      CodeUri: Function1/
-      Handler: app.lambda_handler
-      Runtime: python3.14
+      PackageType: Image
       MemorySize: 3008
       Timeout: 30
       Tracing: Active
@@ -51,6 +49,9 @@ Resources:
             QueueName: !GetAtt SQSQueue1.QueueName
     Metadata:
       SamResourceId: Function1
+      DockerTag: latest
+      DockerContext: ./Function1
+      Dockerfile: Dockerfile
   Function1LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -60,14 +61,10 @@ Resources:
   Function2:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: Function2/
       Description: HelloWorld Lambda function
+      PackageType: Image
       MemorySize: 128
       Timeout: 3
-      Handler: app.lambda_handler
-      Runtime: python3.14
-      Architectures:
-        - x86_64
       EphemeralStorage:
         Size: 512
       Environment:
@@ -80,7 +77,6 @@ Resources:
         MaximumEventAgeInSeconds: 21600
         MaximumRetryAttempts: 2
         DestinationConfig: {}
-      PackageType: Zip
       Policies:
         - Statement:
             - Action:
@@ -122,18 +118,17 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref Table
       RecursiveLoop: Terminate
-      SnapStart:
-        ApplyOn: None
       Events:
         SQS1:
           Type: SQS
           Properties:
             Queue: !GetAtt SQSQueue1.Arn
             BatchSize: 1
-      RuntimeManagementConfig:
-        UpdateRuntimeOn: Auto
     Metadata:
       SamResourceId: Function2
+      DockerTag: latest
+      DockerContext: ./Function2
+      Dockerfile: Dockerfile
   Function2LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:

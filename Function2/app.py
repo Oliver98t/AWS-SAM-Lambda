@@ -1,4 +1,5 @@
 import boto3
+import datetime
 import os
 import json
 import uuid
@@ -13,14 +14,15 @@ def lambda_handler(event, context):
     # get the message out of the SQS event
     message = event['Records'][0]['body']
     data = json.loads(message)
-    print(data)
+    print(f"DATA: {data}")
     # write event data to DDB table
-
+    
     value = data['value']
     dynamo.put_item(
         TableName=tablename,
         Item={
             'id': {'S': str(uuid.uuid4())},
-            'Value': {'S': str(value)}
+            'timestamp': {'S': datetime.datetime.now().isoformat()},
+            'Value': {'N': value}
         }
     )

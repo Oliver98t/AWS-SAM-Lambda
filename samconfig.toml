@@ -17,9 +17,10 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
-s3_prefix = "sam-app"
+s3_prefix = "sam-container"
 disable_rollback = true
-image_repositories = []
+image_repositories = ["Function1=348345791015.dkr.ecr.eu-west-2.amazonaws.com/samapp7427b055/function180815219repo", "Function2=348345791015.dkr.ecr.eu-west-2.amazonaws.com/samapp7427b055/function266860bebrepo"]
+stack_name = "sam-container"
 
 [default.package.parameters]
 resolve_s3 = true

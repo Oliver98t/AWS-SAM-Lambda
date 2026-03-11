@@ -1,0 +1,19 @@
+services:
+  function1:
+    platform: linux/amd64
+    build:
+      context: Function1/
+      dockerfile: Dockerfile
+    ports:
+      - "9000:8080"
+    volumes:
+      - .:/app
+  function2:
+    platform: linux/amd64
+    build:
+      context: Function2/
+      dockerfile: Dockerfile
+    ports:
+      - "9000:8080"
+    volumes:
+      - .:/app
