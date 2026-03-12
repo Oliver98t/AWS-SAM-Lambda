@@ -248,6 +248,10 @@ $RECYCLE.BIN/
 env.json
 *.env.json
 
+# IAM policy files containing AWS account IDs
+trust-policy.json
+*-policy.json
+
 # AWS credentials/config (only if created in project root)
 .aws/
 

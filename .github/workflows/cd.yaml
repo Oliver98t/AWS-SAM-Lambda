@@ -27,6 +27,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: eu-west-2
+          audience: sts.amazonaws.com
 
       - name: SAM Build
         run: sam build --parallel
