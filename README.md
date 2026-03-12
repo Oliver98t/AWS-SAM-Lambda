@@ -27,6 +27,84 @@ DynamoDB Table
 | `SQSQueue1` | SQS Queue | Decouples Function1 from Function2 |
 | `Table` | DynamoDB | Stores processed records |
 
+## CI/CD — GitHub Actions
+
+Deployments to AWS are automated via `.github/workflows/cd.yaml` on every push to `main`. It uses OIDC (no stored AWS access keys).
+
+### One-time AWS setup
+
+**1. Create the GitHub OIDC provider** (only needed once per AWS account):
+```bash
+aws iam create-open-id-connect-provider \
+  --url https://token.actions.githubusercontent.com \
+  --client-id-list sts.amazonaws.com \
+  --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1 \
+  --region eu-west-2
+```
+
+**2. Create the IAM role with a trust policy** that authorises this repository:
+```bash
+cat > trust-policy.json << 'EOF'
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+        },
+        "StringLike": {
+          "token.actions.githubusercontent.com:sub": "repo:Oliver98t/AWS-SAM-Lambda:*"
+        }
+      }
+    }
+  ]
+}
+EOF
+
+aws iam create-role \
+  --role-name GitHubActions-sam-app \
+  --assume-role-policy-document file://trust-policy.json
+
+aws iam attach-role-policy \
+  --role-name GitHubActions-sam-app \
+  --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+```
+
+**3. Get the role ARN:**
+```bash
+aws iam get-role --role-name GitHubActions-sam-app \
+  --query "Role.Arn" --output text
+```
+
+**4. Add the role ARN as a GitHub secret:**
+
+Go to **GitHub repo → Settings → Secrets and variables → Actions** and create:
+
+| Secret name | Value |
+|---|---|
+| `AWS_ROLE_ARN` | `arn:aws:iam::<ACCOUNT_ID>:role/GitHubActions-sam-app` |
+
+### Verify the setup
+
+```bash
+# Confirm trust policy has the correct repo name
+aws iam get-role --role-name GitHubActions-sam-app \
+  --query "Role.AssumeRolePolicyDocument" --output json
+
+# Confirm OIDC provider exists
+aws iam list-open-id-connect-providers --output json
+```
+
+Once the secret is set, push to `main` and the workflow will build and deploy automatically.
+
+---
+
 ## Prerequisites
 
 - [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
