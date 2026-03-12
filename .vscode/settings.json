@@ -3,7 +3,7 @@
     "https://raw.githubusercontent.com/aws/serverless-application-model/main/samtranslator/schema/schema.json": "template.yaml"
 },
 "python.testing.pytestArgs": [
-    "tests"
+    "tests/unit/"
 ],
 "python.testing.unittestEnabled": false,
 "python.testing.pytestEnabled": true
